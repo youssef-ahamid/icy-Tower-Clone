@@ -6,21 +6,33 @@ player = Minim(this)
 
 class Platform:
     def __init__(self, x, y, w, img):
+        self.x = x
+        self.y = y
+        self.w = w
+        self.h = 100
+        self.img = loadImage(path + "/" + img + ".png")
+        self.status = 1
+        self.fallcounter = 0
+        self.shaker = [-10, 0, 0, 10, 10, 0, 0, -10]*2
         
     def show_platform(self):
-    
-    def shake(self):
-    
+        if self.status == 1:
+            image(self.img, self.x, self.y, self.w, self.h)
+        elifs self.status == 2:
+            y = self.shaker.pop()
+            x = self.shaker.pop()
+            image(self.img, self.x + x, self.y + y, self.w, self.h)
+            if len(self.shaker) == 0:
+                self.fall()
+                self.status = 3
+                
     def fall(self):
+        self.y += 10
+        self.fallcounter += 1
+        if self.fallcounter = 12:
+            self.status = 4
 
-class Hero:
-    def __init__(self):
-    
-        
-    def show(self):
 
-    def move(self):
-  
 class Buttons:
     def __init__(self, x, y, w, h, img):
         self.x = x
@@ -69,18 +81,23 @@ class Screen:
                 self.sound_on = False
             else:
                 self.sound_on = True
+    
+class Hero:
+    def __init__(self):
         
-        
-def restart():
-    global game
-    game = Game()
-    game.screen = play
-        
+    def show(self):
+
+    def move(self):
+                      
 class Game:
     def __init__(self):
     
     def display(self):
-        
+            
+def restart():
+    global game
+    game = Game()
+    game.screen = play
 
 pause = Button(, , , , )
 play = Button(, , , , )
