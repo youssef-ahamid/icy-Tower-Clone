@@ -41,7 +41,8 @@ class Button:
         self.w = w
         self.h = h
         self.img = loadImage(path + "/assets/images/buttons/" + img + ".png")
-    
+        self.select_sound = player.loadFile(path + "/assets/audio/select.wav")
+        
     def showButton(self):
         image(self.img, self.x, self.y, self.w, self.h)
         if mouseX in range(self.x, self.x + self.w) and mouseY in range(self.y, self.y + self.h):
@@ -50,12 +51,11 @@ class Button:
             strokeWeight(4)
             rect(self.x - 5, self.y - 5, self.w + 10, self.h + 10)
 
-
 class Screen:
     def __init__(self, bg, buttons):
         self.bg = loadImage(path + "/assets/images/backgrounds/" + bg)
         self.buttons = buttons
-        # self.sound = player.loadFile(path + "/sounds/" + sound + ".mp3")
+        self.press_sound = player.loadFile(path + "/assets/audio/press.wav")
         self.sound_on = True
         
     def runScreen(self):
@@ -71,6 +71,8 @@ class Screen:
             
     def clickButton(self, button):
         global game
+        self.press_sound.rewind()
+        self.press_sound.play()
         # if button == home:
         #     game.screen = home_screen
         if button == instructions:
@@ -168,6 +170,7 @@ class Hero:
         self.frame_s = 0
         self.img_w = img_w
         self.img_h = img_h
+        self.direction = DOWN
         self.x = x
         self.y = y
         self.r = r
@@ -176,12 +179,16 @@ class Hero:
         self.g = g
         self.key_handler = {LEFT: False, RIGHT:False, UP:False}
         self.jump_boost = 1
-    
+        self.jump_sound = player.loadFile(path + "/assets/audio/jump.wav")
+        self.jump2_sound = player.loadFile(path + "/assets/audio/jump2.wav")
+        self.spin_sound = player.loadFile(path + "/assets/audio/spin.wav")
+        self.die_sound = player.loadFile(path + "/assets/audio/die.wav")
+        
     def gravity(self):
         if self.y + self.r == self.g:
             self.vy = 0
         else:
-            self.vy += 4
+            self.vy += 6
             if self.y + self.r + self.vy > self.g:
                 self.vy = self.g - (self.y + self.r)
         
@@ -195,57 +202,80 @@ class Hero:
             if self.y + self.r <= game.platforms[-i].y and self.x >= game.platforms[-i].x and self.x - self.r/2 <= game.platforms[-i].x + game.platforms[-i].w:
                 return game.platforms[-i]
         return game.platforms[0]
-           
-    def friction(self):
-        if self.vx < 0:
-            self.vx += 1
-        if self.vx > 0:
-            self.vx -= 1
-        if self.vx*10 in range(-4, 5):
-            self.vx = 0
 
     def update(self):
         self.gravity()
         if self.key_handler[LEFT]:
-            if self.vx > -25:
-                self.vx -= 1
+            if self.direction == RIGHT:
+                self.vx = -self.vx 
+            if self.vx > -40:
+                self.vx -= 3
             self.direction = LEFT
         elif self.key_handler[RIGHT]:
-            if self.vx < 25:
-                self.vx += 1
+            if self.direction == LEFT:
+                self.vx = - self.vx
+            if self.vx < 40:
+                self.vx += 3
             self.direction = RIGHT
         else:
-            self.friction()
+            self.vx = 0
+
             
-        self.jump_boost = abs(self.vx)//8
+        self.jump_boost = abs(self.vx)//20
         if self.jump_boost == 0:
             self.jump_boost = 1
         if self.key_handler[UP] and self.distance() == 0 and self.vy >=0:
-            self.vy = -30 * self.jump_boost
+            if self.status != "boost":
+                if -0.5 < self.vx < 0.5:
+                    self.jump_sound.rewind()
+                    self.jump_sound.play()
+                else:
+                    self.jump2_sound.rewind()
+                    self.jump2_sound.play()
+            else:
+                self.spin_sound.rewind()
+                self.spin_sound.play()
+            self.vy = -40 * self.jump_boost
             
         if self.x - self.r < 75:
-            self.x = self.r + 75
-            self.vx = - self.vx//2
+            if self.direction == LEFT:
+                self.vx = - self.vx//2
+            else:
+                self.x = self.r + 75
         elif self.x >= game.w + self.r:
-            self.x = game.w + self.r
-            self.vx = - self.vx//2
+            if self.direction == RIGHT:
+                self.vx = - self.vx//2
+            else:
+                self.x = game.w + self.r
+
         self.y += self.vy
         self.x += self.vx
-        if self.y <= game.h//2:
-            game.y_shift -= self.vy
+        if self.y <= 0:
+            if game.y_shift +self.y <= 100:
+                game.y_shift -= self.vy - 5
+            else:
+                game.y_shift -= self.vy//2 - 5
+            
+
+                
+            # game.y_shift += self.speed
         if frameCount % 5 == 0:
             if -0.5 < self.vx < 0.5:
                 self.frame_i = (self.frame_i + 1) % self.i_slices
             elif -0.5 > self.vx or self.vx > 0.5:
                 self.frame_w = (self.frame_w + 1) % self.w_slices
-        if frameCount% 2 == 0:
-            if self.vy < - 65 and game.floor[0] > 8:
-                self.status = "boost"
-            elif self.vy > 5:
-                self.status = ""
+        if self.vy < - 65 and game.floor[0] > 8:
+            self.spin_sound.play()
+            self.spin_sound.rewind()
+            self.status = "boost"
+        elif self.vy > 5:
+            self.status = ""
+            self.spin_sound.pause()
         self.frame_s = (self.frame_s + 1) % self.s_slices
         
         if self.vy > 100 or self.y > game.platforms[0].y:
+            self.die_sound.rewind()
+            self.die_sound.play()
             self.alive = False
         
     def distance(self):
@@ -256,26 +286,28 @@ class Hero:
         self.update()
         if self.status == "boost":
             game.floor[1] += 0.4
-            game.confetti.append(Confetti(self.x + random.randint(-5, 5), self.y, 20, random.choice(game.conf), random.randint(-10, 10)))
-            game.confetti.append(Confetti(self.x + random.randint(-5, 5), self.y, 20, random.choice(game.conf), random.randint(-10, 10)))
-            image(self.spinning, self.x - self.r, self.y -self.r +  game.y_shift, self.img_w["spin"] * 2, self.img_h["spin"] * 2, self.frame_s * self.img_w["spin"], 0, (self.frame_s +1) * self.img_w["spin"], self.img_h["spin"])
+            # game.confetti.append(Confetti(self.x + random.randint(-5, 5), self.y, 20, random.choice(game.conf), random.randint(-10, 10)))
+            # game.confetti.append(Confetti(self.x + random.randint(-5, 5), self.y, 20, random.choice(game.conf), random.randint(-10, 10)))
+            # game.confetti.append(Confetti(self.x + random.randint(-5, 5), self.y, 20, random.choice(game.conf), random.randint(-10, 10)))
+            # game.confetti.append(Confetti(self.x + random.randint(-5, 5), self.y, 20, random.choice(game.conf), random.randint(-10, 10)))
+            image(self.spinning, self.x - self.r, self.y -self.r +  game.y_shift, self.img_w["spin"] * 1.5, self.img_h["spin"] * 1.5, self.frame_s * self.img_w["spin"], 0, (self.frame_s +1) * self.img_w["spin"], self.img_h["spin"])
         else:
             if -0.5 < self.vx < 0.5 and self.vy < 0:
-                image(self.jumping, self.x - self.r, self.y -self.r +  game.y_shift, self.img_w["jump"] * 2, self.img_h["jump"] * 2)
+                image(self.jumping, self.x - self.r, self.y -self.r +  game.y_shift, self.img_w["jump"] * 1.5, self.img_h["jump"] * 1.5)
             elif self.vx > 0.5 and self.vy < 0:
-                image(self.jumping2, self.x - self.r, self.y -self.r +  game.y_shift, self.img_w["jump2"] * 2, self.img_h["jump2"] * 2)
+                image(self.jumping2, self.x - self.r, self.y -self.r +  game.y_shift, self.img_w["jump2"] * 1.5, self.img_h["jump2"] * 1.5)
             elif self.vx < -0.5 and self.vy < 0:
-                image(self.jumping2, self.x - self.r, self.y -self.r +  game.y_shift, self.img_w["jump2"] * 2, self.img_h["jump2"] * 2, self.img_w["jump2"], 0, 0, self.img_h["jump2"])
+                image(self.jumping2, self.x - self.r, self.y -self.r +  game.y_shift, self.img_w["jump2"] * 1.5, self.img_h["jump2"] * 1.5, self.img_w["jump2"], 0, 0, self.img_h["jump2"])
             elif self.vx > 0.5 and self.vy > 0:
-                image(self.falling, self.x - self.r, self.y -self.r +  game.y_shift, self.img_w["fall"] * 2, self.img_h["fall"] * 2)
+                image(self.falling, self.x - self.r, self.y -self.r +  game.y_shift, self.img_w["fall"] * 1.5, self.img_h["fall"] * 1.5)
             elif self.vy > 0:
-                image(self.falling, self.x - self.r, self.y -self.r +  game.y_shift, self.img_w["fall"] * 2, self.img_h["fall"] * 2, self.img_w["fall"], 0, 0, self.img_h["fall"])
+                image(self.falling, self.x - self.r, self.y -self.r +  game.y_shift, self.img_w["fall"] * 1.5, self.img_h["fall"] * 1.5, self.img_w["fall"], 0, 0, self.img_h["fall"])
             elif -0.5 < self.vx < 0.5 and self.vy == 0:
-                image(self.idle, self.x - self.r, self.y -self.r +  game.y_shift, self.img_w["idle"] * 2, self.img_h["idle"] * 2, self.frame_i * self.img_w["idle"], 0, (self.frame_i +1) * self.img_w["idle"], self.img_h["idle"])
+                image(self.idle, self.x - self.r, self.y -self.r +  game.y_shift, self.img_w["idle"] * 1.5, self.img_h["idle"] * 1.5, self.frame_i * self.img_w["idle"], 0, (self.frame_i +1) * self.img_w["idle"], self.img_h["idle"])
             elif self.vx >= 0.5:
-                image(self.walking, self.x - self.r, self.y -self.r +  game.y_shift, self.img_w["walking"] * 2, self.img_h["walking"] * 2, self.frame_w * self.img_w["walking"], 0, (self.frame_w +1) * self.img_w["walking"], self.img_h["walking"])
+                image(self.walking, self.x - self.r, self.y -self.r +  game.y_shift, self.img_w["walking"] * 1.5, self.img_h["walking"] * 1.5, self.frame_w * self.img_w["walking"], 0, (self.frame_w +1) * self.img_w["walking"], self.img_h["walking"])
             elif self.vx <= -0.5:
-                image(self.walking, self.x - self.r, self.y -self.r +  game.y_shift, self.img_w["walking"] * 2, self.img_h["walking"] * 2, (self.frame_w +1) * self.img_w["walking"], 0, self.frame_w * self.img_w["walking"], self.img_h["walking"])
+                image(self.walking, self.x - self.r, self.y -self.r +  game.y_shift, self.img_w["walking"] * 1.5, self.img_h["walking"] * 1.5, (self.frame_w +1) * self.img_w["walking"], 0, self.frame_w * self.img_w["walking"], self.img_h["walking"])
         
                         
 class Game:
@@ -303,7 +335,7 @@ class Game:
         for i in range(3):
             self.platforms.append(Platform(75 + (self.w * i)/3, self.g, self.w/3, 50, "platform1.png", 0))
         for i in range(2, 100):
-            w = random.randint(300, 400)
+            w = random.randint(250, 350)
             x = random.randint(75, self.w - w)
             platform = Platform(x, self.h - 120*i, w, 50, "platform1.png", i)
             self.platforms.append(platform)
@@ -318,7 +350,7 @@ class Game:
         for i in range(3):
             self.platforms.append(Platform(75 + (self.w * i)/3, self.g - self.temp, self.w/3 - 20, 50, "platform3.png", 200))
         for i in range(201, 300):
-            w = random.randint(100, 200)
+            w = random.randint(150, 250)
             x = random.randint(75, self.w - w)
             self.platforms.append(Platform(x, self.h - 120*i, w, 50, "platform3.png", i))
         for platform in self.platforms:
@@ -328,13 +360,17 @@ class Game:
         random_platform2 = random.choice(self.platforms)
         self.powerups.append(PowerUp(int(random_platform1.x + random_platform1.w/2 - 108), random_platform1.y, "spring", 4, 108, 32))
         self.powerups.append(PowerUp(int(random_platform2.x + random_platform2.w/2 - 102), random_platform2.y, "multiplier", 4, 102, 115))
-        self.harold = Hero(self.w/2, self.h - 50, 50, self.g, {"idle":114/3, "walking":37, "spin":60, "jump":38, "jump2": 38, "fall":38}, {"idle":73, "walking":73, "spin":60, "jump":71, "jump2": 71, "fall":71}, [4, 4, 12], "harold")
-                                  
+        self.harold = Hero(self.w/2, self.h - 30, 30, self.g, {"idle":114/3, "walking":37, "spin":60, "jump":38, "jump2": 38, "fall":38}, {"idle":73, "walking":73, "spin":60, "jump":71, "jump2": 71, "fall":71}, [4, 4, 12], "harold")
+        self.background_sound = player.loadFile(path + "/assets/audio/theme-song.mp3")
+        self.background_sound.rewind()
+        self.background_sound.play()
+        
     def display(self):
         self.font = createFont("RoteFlora.ttf", 32)
         global leaderboard
         self.screen.runScreen()
         if self.screen == game_screen:
+            self.background_sound.pause()
             for platform in self.platforms:
                 platform.showPlatform()
             for powerup in self.powerups: 
@@ -388,7 +424,8 @@ class Game:
                     text(self.floor[0], 730, 470)
                     for button in self.screen.buttons:
                         button.showButton()
-                # self.screen = game_over
+                    self.background_sound.play()
+                    
         if self.screen == leaderboard_screen:
             fill(0)
             textFont(self.font, 80)
