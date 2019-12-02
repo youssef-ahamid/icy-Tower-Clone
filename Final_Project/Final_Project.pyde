@@ -3,7 +3,6 @@ import os, random
 path = os.getcwd()
 player = Minim(this)
 
-
 class Platform:
     def __init__(self, x, y, w, h, img, floor):
         self.x = x
@@ -14,11 +13,9 @@ class Platform:
         self.floor = floor
         self.img = loadImage(path + "/assets/images/" + img)
         self.status = 1
-        self.fallcounter = 0
-        self.shaker = [-10, 0, 0, 10, 10, 0, 0, -10]*8
+        self.shaker = [-10, 0, 0, 10, 10, 0, 0, -10]*4
         self.tile = False
         self.tile_img = loadImage(path + "/assets/images/tile.jpg")
-        self.tilenum = 0
         
     def showPlatform(self):
         if self.status == 1:
@@ -51,7 +48,8 @@ class Button:
             noFill()
             stroke(255)
             strokeWeight(4)
-            rect(self.x - 10, self.y - 10, self.w + 20, self.h + 20)
+            rect(self.x - 5, self.y - 5, self.w + 10, self.h + 10)
+
 
 class Screen:
     def __init__(self, bg, buttons):
@@ -86,7 +84,7 @@ class Screen:
         elif button == main:
             game.screen = home_screen
         elif button == play_again:
-            game.screen = game_screen
+            restart()
         # elif button == restart:
         #     restart()
         # elif button == ok:
@@ -99,6 +97,7 @@ class Screen:
         elif button == leader:
             game.screen = leaderboard_screen
 
+
 class Confetti:
     def __init__(self, x, y, vy, img, vx = 0):
         self.x = x
@@ -109,67 +108,66 @@ class Confetti:
         self.alive = True
     
     def update(self):
+        self.vy += 0.4
         if self.y + game.y_shift >= game.h :
             self.alive = False
         self.x += self.vx
         self.y += self.vy
     
     def showConfetti(self):
-        image(self.img, self.x, self.y + game.y_shift, 30, 30)
+        image(self.img, self.x, self.y + game.y_shift, 15, 15)
         self.update()
 
+
 class PowerUp:
-    def __init__(self, x, y, w, h, img, type):
+    def __init__(self, x, y, img, slices, img_w, img_h):
         self.x = x
         self.y = y
-        self.w = w
-        self.h = h
-        self.img = loadImage(path + "/assets/images/power-ups/" + img + ".png")
-        self.type = type
-    
+        self.img = loadImage(path + "/assets/sprites/powerups/" + img + ".png")
+        self.type = img
+        self.slices = slices
+        self.frame = 1
+        self.img_w = img_w
+        self.img_h = img_h
+        self.on = True
+        
     def showPowerUp(self):
         self.hitHero()
-        image(self.img, self.x, self.y + game.y_shift, self.w, self.h, 0, 0, self.w, self.h)
+        if self.type == "spring":
+            image(self.img, self.x, self.y + game.y_shift - self.img_h, self.img_w*2, self.img_h*2, self.frame * self.img_w, self.img_h, (self.frame +1) * self.img_w, 0)
+        else:
+            image(self.img, self.x, self.y + game.y_shift - self.img_h, self.img_w, self.img_h, self.frame * self.img_w, 0, (self.frame +1) * self.img_w,  self.img_h)
+        if frameCount%5 == 0:
+            self.frame = (self.frame + 1) % self.slices
     
     def hitHero(self):
         global game
-        if game.harold.y in range(self.y, self.y + self.h) and game.harold.x in range(self.x, self.x + self.w):
+        if (game.harold.y + game.harold.r) in range(self.y - self.img_h*2, self.y) and game.harold.x in range(self.x, self.x + self.img_w*2):
             if self.type == "spring":
-                game.harold.vy = - 100
+                game.harold.vy = - 200
             elif self.type == "multiplier":
-                game.score_multiplier *= 2
-    
+                game.score_multiplier = 20
+            self.on = False
+
+
 class Hero:
-    def __init__(self, x, y, r, g):
+    def __init__(self, x, y, r, g, img_w, img_h, slices, name):
         self.alive = True
         self.status = ""
-        self.w_slices = 4
-        self.i_slices = 3
-        self.s_slices = 12
-        self.idle = loadImage(path + "/assets/sprites/harold/idle-harold.png")
-        self.walking = loadImage(path + "/assets/sprites/harold/walking-harold.png")
-        self.jumping = loadImage(path + "/assets/sprites/harold/jumping-harold.png")
-        self.jumping2 = loadImage(path + "/assets/sprites/harold/jumping2-harold.png")
-        self.falling = loadImage(path + "/assets/sprites/harold/falling-harold.png")
-        self.spinning = loadImage(path + "/assets/sprites/harold/spinning-harold.png")
+        self.i_slices = slices[0]
+        self.w_slices = slices[1]
+        self.s_slices = slices[2]
+        self.idle = loadImage(path + "/assets/sprites/harold/idle-" + name + ".png")
+        self.walking = loadImage(path + "/assets/sprites/harold/walking-" + name + ".png")
+        self.jumping = loadImage(path + "/assets/sprites/harold/jumping-" + name + ".png")
+        self.jumping2 = loadImage(path + "/assets/sprites/harold/jumping2-" + name + ".png")
+        self.falling = loadImage(path + "/assets/sprites/harold/falling-" + name + ".png")
+        self.spinning = loadImage(path + "/assets/sprites/harold/spinning-" + name + ".png")
         self.frame_i = 0
         self.frame_w = 0
         self.frame_s = 0
-        self.img_w = {}
-        self.img_h = {}
-        self.img_w["idle"] = 114/3
-        self.img_h["idle"] = 73
-        self.img_w["walking"] = 37
-        self.img_h["walking"] = 73
-        self.img_w["spin"] = 60
-        self.img_h["spin"] = 60
-        self.img_w["jump"] = 38
-        self.img_h["jump"] = 71
-        self.img_w["jump2"] = 38
-        self.img_h["jump2"] = 71
-        self.img_w["fall"] = 38
-        self.img_h["fall"] = 71
-        
+        self.img_w = img_w
+        self.img_h = img_h
         self.x = x
         self.y = y
         self.r = r
@@ -191,15 +189,13 @@ class Hero:
             self.g = game.g
         else:
             self.g = self.hitPlatform().y
-
             
     def hitPlatform(self):
         for i in range(1, len(game.platforms)):
             if self.y + self.r <= game.platforms[-i].y and self.x >= game.platforms[-i].x and self.x - self.r/2 <= game.platforms[-i].x + game.platforms[-i].w:
                 return game.platforms[-i]
         return game.platforms[0]
-        
-        
+           
     def friction(self):
         if self.vx < 0:
             self.vx += 1
@@ -207,7 +203,6 @@ class Hero:
             self.vx -= 1
         if self.vx*10 in range(-4, 5):
             self.vx = 0
-    
 
     def update(self):
         self.gravity()
@@ -259,11 +254,8 @@ class Hero:
     def show(self):
         global game
         self.update()
-        # fill(255, 255, 255)
-        # stroke(0, 0, 0)
-        # circle(self.x, self.y + game.y_shift, self.r * 2)
         if self.status == "boost":
-            game.floor[1] += 1
+            game.floor[1] += 0.4
             game.confetti.append(Confetti(self.x + random.randint(-5, 5), self.y, 20, random.choice(game.conf), random.randint(-10, 10)))
             game.confetti.append(Confetti(self.x + random.randint(-5, 5), self.y, 20, random.choice(game.conf), random.randint(-10, 10)))
             image(self.spinning, self.x - self.r, self.y -self.r +  game.y_shift, self.img_w["spin"] * 2, self.img_h["spin"] * 2, self.frame_s * self.img_w["spin"], 0, (self.frame_s +1) * self.img_w["spin"], self.img_h["spin"])
@@ -285,8 +277,7 @@ class Hero:
             elif self.vx <= -0.5:
                 image(self.walking, self.x - self.r, self.y -self.r +  game.y_shift, self.img_w["walking"] * 2, self.img_h["walking"] * 2, (self.frame_w +1) * self.img_w["walking"], 0, self.frame_w * self.img_w["walking"], self.img_h["walking"])
         
-        
-                      
+                        
 class Game:
     def __init__(self, w, h):
         self.confetti = []
@@ -302,7 +293,11 @@ class Game:
         self.y_shift = 0
         self.score_multiplier = 10
         self.platforms = []
+        self.powerups = []
         self.name = ''
+        self.red = random.randint(0, 255)
+        self.blue = random.randint(0, 255)
+        self.green = random.randint(0, 255)
         self.dead = False
         self.go_img = loadImage(path + "/assets/images/backgrounds/game-over.png")
         for i in range(3):
@@ -329,22 +324,38 @@ class Game:
         for platform in self.platforms:
             if platform.floor % 10 == 0 and platform.floor != 0:
                     platform.tile = True
-        self.harold = Hero(self.w/2, self.h - 50, 50, self.g)
+        random_platform1 = random.choice(self.platforms)
+        random_platform2 = random.choice(self.platforms)
+        self.powerups.append(PowerUp(int(random_platform1.x + random_platform1.w/2 - 108), random_platform1.y, "spring", 4, 108, 32))
+        self.powerups.append(PowerUp(int(random_platform2.x + random_platform2.w/2 - 102), random_platform2.y, "multiplier", 4, 102, 115))
+        self.harold = Hero(self.w/2, self.h - 50, 50, self.g, {"idle":114/3, "walking":37, "spin":60, "jump":38, "jump2": 38, "fall":38}, {"idle":73, "walking":73, "spin":60, "jump":71, "jump2": 71, "fall":71}, [4, 4, 12], "harold")
                                   
-        # self.screen = home_screen
-        
-    
     def display(self):
         self.font = createFont("RoteFlora.ttf", 32)
         global leaderboard
         self.screen.runScreen()
         if self.screen == game_screen:
             for platform in self.platforms:
-                platform.showPlatform() 
+                platform.showPlatform()
+            for powerup in self.powerups: 
+                if powerup.on:
+                    powerup.showPowerUp()
+                else:
+                    self.powerups.remove(powerup)
             self.harold.show()
+            
+            for conf in self.confetti:
+                if not conf.alive:
+                    self.confetti.remove(conf)
+                else:
+                    conf.showConfetti()
             if self.harold.alive:
                 platform = self.harold.hitPlatform() 
-                self.floor[0] = platform.floor
+                if self.floor[0] < platform.floor:
+                    self.floor[0] = platform.floor
+                    self.red = random.randint(0, 255)
+                    self.blue = random.randint(0, 255)
+                    self.green = random.randint(0, 255)
                 if self.platforms.index(platform) > 8:
                     for i in range(self.platforms.index(platform) - 8):
                         self.platforms.remove(self.platforms[i])
@@ -352,17 +363,12 @@ class Game:
                     if platform.status == 3:
                         self.platforms.remove(platform)                    
                 if self.harold.y < 0:
-                    if frameCount % 15 == 0:
+                    if frameCount % 10 == 0:
                         self.platforms[0].status = 2
-                for conf in self.confetti:
-                    if not conf.alive:
-                        self.confetti.remove(conf)
-                    else:
-                        conf.showConfetti()
-                self.score = (self.floor[0] + self.floor[1]) * self.score_multiplier
-                fill(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+                self.score = int((self.floor[0] + self.floor[1]) * self.score_multiplier)
+                fill(self.red, self.green, self.blue)
                 textFont(self.font, 60)
-                text("Score: " + str(self.score), 25, self.h - 100)
+                text(str(self.score), 25, self.h - 100)
                 self.temp = self.y_shift
             if not self.harold.alive:
                 if self.score > leaderboard[-1][1] and not self.dead:
@@ -376,6 +382,10 @@ class Game:
                     text(self.name, self.w/2, 600)
                 else:
                     image(self.go_img, 375, 300, 400, 340)
+                    fill(0)
+                    textFont(self.font, 40)
+                    text(self.score, 730, 410)
+                    text(self.floor[0], 730, 470)
                     for button in self.screen.buttons:
                         button.showButton()
                 # self.screen = game_over
@@ -389,16 +399,10 @@ class Game:
                 i += 1
                 textAlign(CENTER)
                 text(row[0] + "    " + str(row[1]), self.w/2, 300 + 100*i)
-                
-        
-        
-        
-                 
-                               
-         
+       
 def restart():
     global game
-    game = Game(1000, 600)
+    game = Game(1000, 800)
     game.screen = game_screen
 
 def getLeaderboard():
@@ -408,49 +412,40 @@ def getLeaderboard():
         row = line.strip().split(",")
         row[1] = int(row[1])
         leaderboard.append(row)
+    leaderboard_file.close()
     leaderboard.sort(key=lambda x: x[1], reverse = True)
     return leaderboard
 
 def updateLeaderboard():
-    global leaderboard
+    global leaderboard, game
+    if game.score > leaderboard[2][1]:
+        leaderboard[2] = [game.name, game.score]
+        leaderboard.sort(key=lambda x: x[1], reverse = True)
+    leaderboard_file = open("leaderboard.csv", "w")
     for row in leaderboard:
-        if game.score > row[1]:
-            leaderboard[2][0] = game.name
-            leaderboard[2][1] = game.score
-            leaderboard.sort(key=lambda x: x[1], reverse = True)
-            leaderboard.remove(leaderboard[-1])
-            break
-    # leaderboard_file = open("leaderboard.csv", "w")
-    # for row in leaderboard:
-    #     leaderboard_file.write(row[0] + "," + str(row[1]) + "\n")
-    # leaderboard_file.close()
-
+        leaderboard_file.write(row[0] + "," + str(row[1]) + "\n")
+    leaderboard_file.close()
 
 pause = Button(50, 50, 50, 50, "pause")
 play = Button(700, 400, 271, 76, "play" )
 # home = Button(, , , , )
 instructions = Button(700, 500, 271, 76, "instructions")
 sound = Button(50, 150, 50, 50, "sound")
-play_again = Button(390, 550, 134, 34, "play-again")
-main = Button(390, 600, 134, 34, "main-menu")
+play_again = Button(400, 550, 134, 34, "play-again")
+main = Button(400, 600, 134, 34, "main-menu")
 # ok = Button(, , , , )
 leader = Button(700, 600, 271, 76, "leader")
 back = Button(200, 700, 195, 60, "back")
-
 home_screen = Screen("bg1.jpg", [play, instructions, leader])
 instructions_screen = Screen("instructions.jpg", [back])
 game_screen = Screen("bg2.jpg", [pause, play_again, main])
 # pause_screen = Screen("bg4", [home, instructions, restart, sound, ok, leader], "bgmusic2")
-leaderboard_screen = Screen("high-scores.jpg", [back])
-           
+leaderboard_screen = Screen("high-scores.jpg", [back])    
 leaderboard = getLeaderboard()
-print(leaderboard)
-
 game = Game(1000, 800)
 
 def keyPressed():
     global game
-    
     if keyCode == LEFT:
         game.harold.key_handler[LEFT] = True
     elif keyCode == RIGHT:
@@ -459,12 +454,13 @@ def keyPressed():
         game.harold.key_handler[UP] = True   
     else:
         if not game.harold.alive and game.screen == game_screen:
-            game.name += str(key)
             if key == DELETE or key == BACKSPACE:
                 game.name = game.name[:-1]
-            if key == RETURN or key == ENTER:
-                # updateLeaderboard()
+            elif key == RETURN or key == ENTER:
+                updateLeaderboard()
                 game.dead = True
+            else:
+                game.name += str(key)
         
 def keyReleased():
     if keyCode == LEFT:
@@ -473,12 +469,11 @@ def keyReleased():
         game.harold.key_handler[RIGHT] = False
     elif keyCode == UP:
         game.harold.key_handler[UP] = False       
-    
-
         
 def setup():
     size(1150, 800)
     background(0)
+    
 def draw():
     background(0)
     game.display()
