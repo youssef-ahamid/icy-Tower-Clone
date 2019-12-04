@@ -27,7 +27,7 @@ class Platform:
                 y = self.shaker.pop()
                 x = self.shaker.pop()
                 image(self.img, self.x + x, self.y + y + game.y_shift, self.w, self.h)
-        if self.tile:
+        if self.floor % 10 == 0 and self.floor != 0:
             image(self.tile_img, self.x + self.w/2 - 35, self.y + game.y_shift, 70, 50)
             fill(255)
             textSize(20)
@@ -84,7 +84,7 @@ class Screen:
         elif button == back:
             game.screen = home_screen
         elif button == main:
-            game.screen = home_screen
+            game = Game(1000, 800)
         elif button == play_again:
             restart()
         # elif button == restart:
@@ -209,13 +209,13 @@ class Hero:
             if self.direction == RIGHT:
                 self.vx = -self.vx 
             if self.vx > -40:
-                self.vx -= 3
+                self.vx -= 2
             self.direction = LEFT
         elif self.key_handler[RIGHT]:
             if self.direction == LEFT:
                 self.vx = - self.vx
             if self.vx < 40:
-                self.vx += 3
+                self.vx += 2
             self.direction = RIGHT
         else:
             self.vx = 0
@@ -235,7 +235,7 @@ class Hero:
             else:
                 self.spin_sound.rewind()
                 self.spin_sound.play()
-            self.vy = -40 * self.jump_boost
+            self.vy = -50 * self.jump_boost
             
         if self.x - self.r < 75:
             if self.direction == LEFT:
@@ -252,9 +252,12 @@ class Hero:
         self.x += self.vx
         if self.y <= 0:
             if game.y_shift +self.y <= 100:
-                game.y_shift -= self.vy - 5
+                game.y_shift -= self.vy - 2
             else:
-                game.y_shift -= self.vy//2 - 5
+                if self.vy > 0:
+                    game.y_shift += 2
+                else:
+                    game.y_shift -= self.vy//3 - 2
             
 
                 
@@ -264,16 +267,18 @@ class Hero:
                 self.frame_i = (self.frame_i + 1) % self.i_slices
             elif -0.5 > self.vx or self.vx > 0.5:
                 self.frame_w = (self.frame_w + 1) % self.w_slices
-        if self.vy < - 65 and game.floor[0] > 8:
-            self.spin_sound.play()
-            self.spin_sound.rewind()
+        if self.vy < - 65 and game.floor[0] > 5:
+            if not self.spin_sound.isPlaying():
+                self.spin_sound.rewind()
+                self.spin_sound.play()
             self.status = "boost"
-        elif self.vy > 5:
+        elif self.vy > 20 or self.vy == 0:
             self.status = ""
-            self.spin_sound.pause()
+            if self.spin_sound.isPlaying():
+                self.spin_sound.pause()
         self.frame_s = (self.frame_s + 1) % self.s_slices
         
-        if self.vy > 100 or self.y > game.platforms[0].y:
+        if self.y + game.y_shift >= game.h:
             self.die_sound.rewind()
             self.die_sound.play()
             self.alive = False
@@ -286,10 +291,10 @@ class Hero:
         self.update()
         if self.status == "boost":
             game.floor[1] += 0.4
-            # game.confetti.append(Confetti(self.x + random.randint(-5, 5), self.y, 20, random.choice(game.conf), random.randint(-10, 10)))
-            # game.confetti.append(Confetti(self.x + random.randint(-5, 5), self.y, 20, random.choice(game.conf), random.randint(-10, 10)))
-            # game.confetti.append(Confetti(self.x + random.randint(-5, 5), self.y, 20, random.choice(game.conf), random.randint(-10, 10)))
-            # game.confetti.append(Confetti(self.x + random.randint(-5, 5), self.y, 20, random.choice(game.conf), random.randint(-10, 10)))
+            # game.confetti.append(Confetti(self.x + random.randint(-5, 5), self.y, 10, random.choice(game.conf), random.randint(-10, 10)))
+            # game.confetti.append(Confetti(self.x + random.randint(-5, 5), self.y, 10, random.choice(game.conf), random.randint(-10, 10)))
+            # game.confetti.append(Confetti(self.x + random.randint(-5, 5), self.y, 10, random.choice(game.conf), random.randint(-10, 10)))
+            # game.confetti.append(Confetti(self.x + random.randint(-5, 5), self.y, 10, random.choice(game.conf), random.randint(-10, 10)))
             image(self.spinning, self.x - self.r, self.y -self.r +  game.y_shift, self.img_w["spin"] * 1.5, self.img_h["spin"] * 1.5, self.frame_s * self.img_w["spin"], 0, (self.frame_s +1) * self.img_w["spin"], self.img_h["spin"])
         else:
             if -0.5 < self.vx < 0.5 and self.vy < 0:
@@ -335,7 +340,7 @@ class Game:
         for i in range(3):
             self.platforms.append(Platform(75 + (self.w * i)/3, self.g, self.w/3, 50, "platform1.png", 0))
         for i in range(2, 100):
-            w = random.randint(250, 350)
+            w = random.randint(300, 400)
             x = random.randint(75, self.w - w)
             platform = Platform(x, self.h - 120*i, w, 50, "platform1.png", i)
             self.platforms.append(platform)
@@ -343,24 +348,22 @@ class Game:
         for i in range(3):
             self.platforms.append(Platform(75 + (self.w * i)/3, self.g - self.temp, self.w/3, 50, "platform2.png", 100))
         for i in range(101, 200):
-            w = random.randint(200, 300)
+            w = random.randint(250, 350)
             x = random.randint(75, self.w - w)
             self.platforms.append(Platform(x, self.h - 120*i, w, 50, "platform2.png", i))
-            self.temp = 120 * i
+            self.temp = 120 * i 
         for i in range(3):
             self.platforms.append(Platform(75 + (self.w * i)/3, self.g - self.temp, self.w/3 - 20, 50, "platform3.png", 200))
         for i in range(201, 300):
             w = random.randint(150, 250)
             x = random.randint(75, self.w - w)
             self.platforms.append(Platform(x, self.h - 120*i, w, 50, "platform3.png", i))
-        for platform in self.platforms:
-            if platform.floor % 10 == 0 and platform.floor != 0:
-                    platform.tile = True
         random_platform1 = random.choice(self.platforms)
         random_platform2 = random.choice(self.platforms)
         self.powerups.append(PowerUp(int(random_platform1.x + random_platform1.w/2 - 108), random_platform1.y, "spring", 4, 108, 32))
         self.powerups.append(PowerUp(int(random_platform2.x + random_platform2.w/2 - 102), random_platform2.y, "multiplier", 4, 102, 115))
-        self.harold = Hero(self.w/2, self.h - 30, 30, self.g, {"idle":114/3, "walking":37, "spin":60, "jump":38, "jump2": 38, "fall":38}, {"idle":73, "walking":73, "spin":60, "jump":71, "jump2": 71, "fall":71}, [4, 4, 12], "harold")
+        
+        self.harold = Hero(self.w/2, self.h - 30, 40, self.g, {"idle":114/3, "walking":37, "spin":60, "jump":38, "jump2": 38, "fall":38}, {"idle":73, "walking":73, "spin":60, "jump":71, "jump2": 71, "fall":71}, [4, 4, 12], "harold")
         self.background_sound = player.loadFile(path + "/assets/audio/theme-song.mp3")
         self.background_sound.rewind()
         self.background_sound.play()
@@ -371,36 +374,36 @@ class Game:
         self.screen.runScreen()
         if self.screen == game_screen:
             self.background_sound.pause()
-            for platform in self.platforms:
-                platform.showPlatform()
+            for i in range(20):
+                if self.platforms[i].y + self.y_shift  - 120 > self.h:
+                    self.platforms.remove(self.platforms[i])
+                else:
+                    self.platforms[i].showPlatform()
             for powerup in self.powerups: 
                 if powerup.on:
                     powerup.showPowerUp()
                 else:
                     self.powerups.remove(powerup)
-            self.harold.show()
             
-            for conf in self.confetti:
-                if not conf.alive:
-                    self.confetti.remove(conf)
-                else:
-                    conf.showConfetti()
+            # for conf in self.confetti:
+            #     if not conf.alive:
+            #         self.confetti.remove(conf)
+            #     else:
+            #         conf.showConfetti()
             if self.harold.alive:
-                platform = self.harold.hitPlatform() 
+                self.harold.show()
+                platform = self.harold.hitPlatform()
                 if self.floor[0] < platform.floor:
                     self.floor[0] = platform.floor
                     self.red = random.randint(0, 255)
                     self.blue = random.randint(0, 255)
                     self.green = random.randint(0, 255)
-                if self.platforms.index(platform) > 8:
-                    for i in range(self.platforms.index(platform) - 8):
-                        self.platforms.remove(self.platforms[i])
-                for platform in self.platforms:
-                    if platform.status == 3:
-                        self.platforms.remove(platform)                    
-                if self.harold.y < 0:
-                    if frameCount % 10 == 0:
-                        self.platforms[0].status = 2
+                # for platform in self.platforms:
+                #     if platform.status == 3:
+                #         self.platforms.remove(platform)                    
+                # if self.harold.y < 0:
+                #     if frameCount % 10 == 0:
+                #         self.platforms[0].status = 2
                 self.score = int((self.floor[0] + self.floor[1]) * self.score_multiplier)
                 fill(self.red, self.green, self.blue)
                 textFont(self.font, 60)
@@ -424,7 +427,10 @@ class Game:
                     text(self.floor[0], 730, 470)
                     for button in self.screen.buttons:
                         button.showButton()
-                    self.background_sound.play()
+        else:
+            if not self.background_sound.isPlaying():
+                self.background_sound.rewind()
+                self.background_sound.play()           
                     
         if self.screen == leaderboard_screen:
             fill(0)
