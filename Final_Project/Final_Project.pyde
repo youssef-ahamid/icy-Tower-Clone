@@ -6,6 +6,8 @@ difficulty = 1
 character = "harold"
 music = True
 sound_fx = True
+SCREEN_W = 1150
+SCREEN_H = 800
 
 class Platform:
     def __init__(self, x, y, w, h, img, floor):
@@ -23,10 +25,10 @@ class Platform:
     def showPlatform(self):
         image(self.img, self.x, self.y + game.y_shift, self.w, self.h)
         if self.floor % 10 == 0 and self.floor != 0:
-            image(self.tile_img, self.x + self.w/2 - 35, self.y + game.y_shift, 70, 50)
+            image(self.tile_img, self.x + self.w/2 - 35, self.y + 20 + game.y_shift, 70, 50)
             fill(255)
             textSize(20)
-            text(self.floor, self.x + self.w/2 - 15, self.y + 30 + game.y_shift)
+            text(self.floor, self.x + self.w/2 - 15, self.y + 50 + game.y_shift)
 
 
 class Button:
@@ -59,7 +61,6 @@ class Screen:
         self.bg = loadImage(path + "/assets/images/backgrounds/" + bg)
         self.buttons = buttons
         self.press_sound = player.loadFile(path + "/assets/audio/press.wav")
-        self.sound_on = True
         
     def runScreen(self):
         image(self.bg, 0, 0, game.w + 150, game.h)
@@ -70,24 +71,14 @@ class Screen:
         else:
             for button in self.buttons:
                 button.showButton()
-        # something for the sounds
             
     def clickButton(self, button):
         global game, difficulty, character, music, sound_fx
-        if game.sound_fx:
-            self.press_sound.rewind()
-            self.press_sound.play()
-        # if button == home:
-        #     game.screen = home_screen
         if button == instructions:
             game.screen = instructions_screen
         elif button == play:
             game.screen = game_screen
-        elif button == pause:
-            game.screen = pause_screen
         elif button == back:
-            # if self == options_screen:
-            #     restart()
             game.screen = home_screen
         elif button == main:
             game = Game(1000, 800)
@@ -138,35 +129,39 @@ class Screen:
             pro.on = False
             legend.on = False
             difficulty = 1
+            game = Game(1000, 800)
+            game.screen = options_screen
         elif button == amateur:
             rookie.on = False
             amateur.on = True
             pro.on = False
             legend.on = False
             difficulty = 1.25
+            game = Game(1000, 800)
+            game.screen = options_screen
         elif button == pro:
             rookie.on = False
             amateur.on = False
             pro.on = True
             legend.on = False
             difficulty = 1.5
+            game = Game(1000, 800)
+            game.screen = options_screen
         elif button == legend:
             rookie.on = False
             amateur.on = False
             pro.on = False
             legend.on = True
             difficulty = 2
-        # elif button == restart:
-        #     restart()
-        # elif button == ok:
-        #     game.screen = game_screen
-        elif button == sound:
-            if self.sound_on:
-                self.sound_on = False
-            else:
-                self.sound_on = True
+            game = Game(1000, 800)
+            game.screen = options_screen
         elif button == leader:
             game.screen = leaderboard_screen
+            
+        if game.sound_fx:
+            self.press_sound.rewind()
+            self.press_sound.play()
+        
 
 
 class Confetti:
@@ -237,9 +232,9 @@ class Hero:
         self.frame_i = 0
         self.frame_w = 0
         self.frame_s = 0
+        self.direction = ""
         self.img_w = img_w
         self.img_h = img_h
-        self.direction = DOWN
         self.x = x
         self.y = y
         self.r = r
@@ -305,17 +300,11 @@ class Hero:
                 else:
                     self.spin_sound.rewind()
                     self.spin_sound.play()
-            self.vy = -45 * self.jump_boost
+            self.vy = -100 * self.jump_boost
             
         if self.x - self.r < 75:
-            # if self.direction == LEFT:
-            #     self.vx = - self.vx//2
-            # else:
             self.x = self.r + 75
         elif self.x >= game.w + self.r:
-            # if self.direction == RIGHT:
-            #     self.vx = - self.vx//2
-            # else:
             self.x = game.w + self.r
 
         self.y += self.vy
@@ -381,9 +370,7 @@ class Hero:
             elif self.vx <= -0.5:
                 image(self.walking, self.x - self.r, self.y -self.r +  game.y_shift, self.img_w["walking"] * 1.5, self.img_h["walking"] * 1.5, (self.frame_w +1) * self.img_w["walking"], 0, self.frame_w * self.img_w["walking"], self.img_h["walking"])
         
-# class Main:
-#     def __init__(self):
-                            
+                         
 class Game:
     def __init__(self, w, h):
         global character, difficulty, sound_fx, music
@@ -443,10 +430,7 @@ class Game:
         random_platform2 = random.choice(self.platforms)
         self.powerups.append(PowerUp(int(random_platform1.x + random_platform1.w/2 - 108), random_platform1.y, "spring", 4, 108, 32))
         self.powerups.append(PowerUp(int(random_platform2.x + random_platform2.w/2 - 102), random_platform2.y, "multiplier", 4, 102, 115))
-        if self.character == "Disco Dave":
-            self.harold = Hero(self.w/2, self.h - 30, 30, self.g, {"idle":148/4, "walking":146/4, "spin":678//12, "jump":37, "jump2": 38, "fall":37}, {"idle":56, "walking":63, "spin":63, "jump":64, "jump2": 66, "fall":59}, [4, 4, 12], "Disco Dave")
-        elif self.character == "harold":
-            self.harold = Hero(self.w/2, self.h - 30, 40, self.g, {"idle":114/3, "walking":37, "spin":60, "jump":38, "jump2": 38, "fall":38}, {"idle":73, "walking":73, "spin":60, "jump":71, "jump2": 71, "fall":71}, [4, 4, 12], "harold")            
+        self.harold = Hero(self.w/2, self.h - 30, 40, self.g, {"idle":114/3, "walking":37, "spin":60, "jump":38, "jump2": 38, "fall":38}, {"idle":73, "walking":73, "spin":60, "jump":71, "jump2": 71, "fall":71}, [4, 4, 12], self.character)            
         self.background_sound = player.loadFile(path + "/assets/audio/theme-song.mp3")
         self.background_sound.rewind()
         self.level = 4
@@ -459,12 +443,10 @@ class Game:
             x = random.randint(75, self.w - w)
             self.platforms.append(Platform(x, self.h - 120*i, w, 50, "platform4.png", i))
             self.temp = 120 * i
+        random_platform1 = random.choice(self.platforms)
+        self.powerups.append(PowerUp(int(random_platform1.x + random_platform1.w/2 - 108), random_platform1.y, random.choice(["spring", "multiplier"]), 4, 108, 32))
         
     def display(self):
-        if self.music and not self.background_sound.isPlaying():
-            self.background_sound.play()
-        elif not self.music:
-            self.background_sound.pause()
         self.font = createFont("RoteFlora.ttf", 32)
         global leaderboard
         self.screen.runScreen()
@@ -504,14 +486,14 @@ class Game:
                 self.temp = self.y_shift
             if not self.harold.alive:
                 if self.score > leaderboard[-1][1] and not self.dead:
-                    image(self.high_score_img, 344, 300, 462, 86)
+                    image(self.high_score_img, SCREEN_W/2 - 462/2, SCREEN_H / 2 - 100, 462, 86)
                     self.y_shift = self.temp
                     fill(255)
                     textFont(self.font, 70)
+                    textAlign(CENTER)
+                    text("Name", SCREEN_W/2, SCREEN_H/2 + 50)
                     textAlign(CENTER, BOTTOM)
-                    text("Name", self.w/2, 500)
-                    textAlign(CENTER, CENTER)
-                    text(self.name, self.w/2, 600)
+                    text(self.name, SCREEN_W/2, SCREEN_H/2 + 150)
                 else:
                     image(self.go_img, 375, 300, 400, 340)
                     fill(0)
@@ -519,26 +501,29 @@ class Game:
                     text(self.score, 730, 410)
                     text(self.floor[0], 730, 470)
                     for button in self.screen.buttons:
-                        button.showButton()
-        # else:
-        #     if self.music and not self.background_sound.isPlaying():
-        #         self.background_sound.rewind()
-        #         self.background_sound.play() 
-                
-        #     elif not self.music:
-        #         self.background_sound.pause()
-            
-                    
+                        button.showButton()  
         if self.screen == leaderboard_screen:
             fill(0)
             textFont(self.font, 80)
-            textAlign(CENTER)
-            text("NAME    SCORE", self.w/2, 300)
+            textAlign(LEFT)
+            text("NAME", self.w/2 - 300, 300)
             i = 0
             for row in leaderboard:
                 i += 1
-                textAlign(CENTER)
-                text(row[0] + "    " + str(row[1]), self.w/2, 300 + 100*i)
+                textAlign(LEFT)
+                text(row[0], self.w/2 - 300, 300 + 100*i)
+            textAlign(LEFT)
+            text("Score", self.w/2 + 200, 300)
+            i = 0
+            for row in leaderboard:
+                i += 1
+                textAlign(LEFT)
+                text(row[1], self.w/2 + 200, 300 + 100*i)
+        if self.music and not self.background_sound.isPlaying() and self.screen != game_screen:
+            self.background_sound.play()
+        elif not self.music:
+            self.background_sound.pause()
+           
        
 def restart():
     global game
@@ -594,40 +579,42 @@ back = Button(200, 700, 195, 60, "back")
 options_screen = Screen("options.jpg", [on1, on2, off1, off2, rookie, amateur, pro, legend, character1, character2, back])
 home_screen = Screen("bg1.jpg", [play, instructions, leader, options])
 instructions_screen = Screen("instructions.jpg", [back])
-game_screen = Screen("bg2.jpg", [pause, play_again, main])
-# pause_screen = Screen("bg4", [home, instructions, restart, sound, ok, leader], "bgmusic2")
+game_screen = Screen("bg2.jpg", [play_again, main])
 leaderboard_screen = Screen("high-scores.jpg", [back])    
 leaderboard = getLeaderboard()
 game = Game(1000, 800)
 
 def keyPressed():
     global game
-    if keyCode == LEFT:
-        game.harold.key_handler[LEFT] = True
-    elif keyCode == RIGHT:
-        game.harold.key_handler[RIGHT] = True
-    elif keyCode == UP:
-        game.harold.key_handler[UP] = True   
+    if not game.harold.alive and game.screen == game_screen:
+        if key == DELETE or key == BACKSPACE:
+            game.name = game.name[:-1]
+        elif key == RETURN or key == ENTER:
+            updateLeaderboard()
+            game.dead = True
+        else:
+            game.name += str(key)
     else:
-        if not game.harold.alive and game.screen == game_screen:
-            if key == DELETE or key == BACKSPACE:
-                game.name = game.name[:-1]
-            elif key == RETURN or key == ENTER:
-                updateLeaderboard()
-                game.dead = True
-            else:
-                game.name += str(key)
+        if keyCode == LEFT:
+            game.harold.key_handler[LEFT] = True
+        elif keyCode == RIGHT:
+            game.harold.key_handler[RIGHT] = True
+        # elif keyCode == UP:
+        elif key == " ":
+            game.harold.key_handler[UP] = True   
+        
         
 def keyReleased():
     if keyCode == LEFT:
         game.harold.key_handler[LEFT] = False
     elif keyCode == RIGHT:
         game.harold.key_handler[RIGHT] = False
-    elif keyCode == UP:
+    # elif keyCode == UP:
+    elif key == " ":
         game.harold.key_handler[UP] = False       
         
 def setup():
-    size(1150, 800)
+    size(SCREEN_W, SCREEN_H)
     background(0)
     
 def draw():
