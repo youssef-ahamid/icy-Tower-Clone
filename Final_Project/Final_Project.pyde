@@ -300,7 +300,7 @@ class Hero:
                 else:
                     self.spin_sound.rewind()
                     self.spin_sound.play()
-            self.vy = -100 * self.jump_boost
+            self.vy = -300 * self.jump_boost
             
         if self.x - self.r < 75:
             self.x = self.r + 75
@@ -432,7 +432,6 @@ class Game:
         self.powerups.append(PowerUp(int(random_platform2.x + random_platform2.w/2 - 102), random_platform2.y, "multiplier", 4, 102, 115))
         self.harold = Hero(self.w/2, self.h - 30, 40, self.g, {"idle":114/3, "walking":37, "spin":60, "jump":38, "jump2": 38, "fall":38}, {"idle":73, "walking":73, "spin":60, "jump":71, "jump2": 71, "fall":71}, [4, 4, 12], self.character)            
         self.background_sound = player.loadFile(path + "/assets/audio/theme-song.mp3")
-        self.background_sound.rewind()
         self.level = 4
         
     def makePlatforms(self, level):
