@@ -300,7 +300,7 @@ class Hero:
                 else:
                     self.spin_sound.rewind()
                     self.spin_sound.play()
-            self.vy = -300 * self.jump_boost
+            self.vy = -45 * self.jump_boost
             
         if self.x - self.r < 75:
             self.x = self.r + 75
